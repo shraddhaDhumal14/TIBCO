@@ -1,0 +1,974 @@
+
+
+[root@til-gw02-cpp2 system]# cat tibco.service
+[Unit]
+Description=To start GW and splunk
+After=network.target
+ 
+[Service]
+Type=simple
+ExecStart=/etc/init.d/tibco start
+ExecStop=/etc/init.d/tibco stop
+Restart=always
+#optional items below
+#RestartSec=3
+ 
+[Install]
+WantedBy=multi-user.target
+[root@til-gw02-cpp2 system]#
+
+Autoscript log check from root user
+*************************************************************
+ps -p 1 (to check if script is running on systemd or init while initialising)
+ldd /etc/init.d/tibco
+ls -l /etc/rc3.d/ | grep tibco
+systemctl
+ls /etc/systemd/system | grep tibco
+cat tibco.service
+cd /etc/systemd/system
+systemctl enable tibco.service
+systemctl status tibco.service
+systemctl start tibco.service
+journalctl -u tibco.service
+systemctl status tibco.service
+
+
+
+
+systemctl stop tibco.service
+grep tibco.service /var/log/messages
+
+runlevel
+less /var/log/boot.log
+journalctl -b
+in cd /etc --> cd rc.d/rc3.d
+*********************************************
+
+[tibco@gateway-01 ~]$ chkconfig --list tibco
+
+chkconfig --add tibco
+
+tibco           0:off   1:off   2:on    3:on    4:on    5:on    6:off
+[tibco@gateway-01 ~]$
+
+**************************************************************************
+
+
+to check server start with init.d or systmd
+ps -aef | grep 1 | head -2
+********************************
+
+to check certificate of backend
+*****************************************************************
+openssl s_client -host {HOST} -port 443 -prexit -showcerts
+********************************
+
+run the command "chage -l tibco" and capture the output
+
+1 - Login with existing password
+
+2- Make sure there are no more SSH connections there
+
+3 - Run the command "passwd"
+
+it would ask for current password and new password...
+
+
+to check password expiration on command unix server for respective user
+***************************************************************
+uktilahr:tibco:/opt/tibco $ chage -l tibco
+Last password change                                    : Jan 07, 2020
+Password expires                                        : never
+Password inactive                                       : never
+Account expires                                         : never
+Minimum number of days between password change          : 1
+Maximum number of days between password change          : 99999
+Number of days of warning before password expires       : 7
+
+***************************************************************************************
+
+Enable Audit Logs:
+====================
+
+
+
+Edit the Properties : /opt/tibco/tools/EMSAudit/config/TILAuditMonitor_LNKTEST3-SB2.properties
+
+And then run the below files to enable audit logs:
+
+cd /opt/tibco/tools/EMSAudit/bin
+
+./EMSAuditMonitor-New.sh ../config/TILAuditMonitor_LNKTEST3-SB2.properties &
+
+*****************************************
+****************************************************************
+syntax : show store [store_name]
+
+show store $sys.failsafe.
+
+compact asynchronous 20
+
+WARNING: Once started, it is not possible to interrupt the compaction and all other operations (creating new connections, sending and/or receiving messages, etc...) will be suspended during, at most, 20 seconds.
+Are you sure (yes,no)? yes
+Compaction ended due to time limit. Old file size = 2.3 GB, new file size = 2.3 GB, 0% size reduction
+tcp://localhost:7632> timeout
+
+
+tcp://localhost:7632> show store $sys.nonfailsafe
+ Type:                          file
+ File:                          /opt/tibco/env/ICCIR3Test06/7632/datastore/async-msgs.db
+ Access Mode:                   asynchronous
+ Pre-allocation Minimum:        0
+ CRC:                           enabled
+ Periodic Truncation:           enabled
+ Destination Defrag batch size: 0.0 Kb
+ File Size:                     2.3 GB
+ Free Space:                    93.8 MB (4.0%)
+ Used Space:                    2.2 GB (96.0%)
+ Fragmentation:                 6%
+ Message Count:                 1433755
+ Message Size:                  1.8 GB
+ Swapped Count:                 0
+ Swapped Size:                  0.0 Kb
+ Disk Write Rate:               0.0 Kb/s
+
+************************************************************
+
+SSH forwarding from auktldr to auktltcr
+**************************************************************
+
+ssh -f -g -N -L 8122:auktltcr:8999 tibco@auktltdr
+
+SSH forwarding from  auktltcr to retigngen box
+ssh -f -g -N -L 8999:10.154.128.41:8122 tibco@auktltcr
+ssh -f -g -N -L 9999:10.154.128.41:8222 tibco@auktltcr
+
+Openssl encryption/decryption
+**********************************************
+echo tilautomation |openssl enc -aes-128-cbc -a -salt -pass pass:asdffdsa
+echo "U2FsdGVkX19ov2YAqLldxtY9VCcgg9kaU+VKA7t3/hU="|openssl enc -aes-128-cbc -a -d -salt -pass pass:asdffdsa
+
+Steps for adding cert in cacerts folder
+*********************************
+/opt/tibco/tibcojre64/1.8.0/lib/security
+
+./keytool -import -alias stan -file /opt/tibco/vodafone/certificates/lets-encrypt-r3-cross-signed.cer -keystore cacerts
+
+password: changeit
+
+java.property.javax.net.ssl.trustStore=/opt/tibco/tibcojre64/1.8.0/lib/security/cacerts
+
+https://letsencrypt.org/certificates/
+
+
+Find out backend
+********************************************
+    find . -type d -name "EDGE"|grep Env|grep -v Certificates|awk -F '/' {​'print $2'}​
+
+
+Debug enable for BW
+**********************
+Trace.Task.BusinessServices/ITIntegration/ApplicationIntegration/Routing/BusinessEventNotification/SubMainProcess.2.process.*=true
+Trace.Engine=true<A0>
+Trace.Task.*=true
+Trace.Info.*=true
+Trace.Warn.*=true
+Trace.Error.*=true
+Trace.Debug.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=true
+
+Active Space:
+***************************************************
+[tibco@auktltvr ~]$ ps -ef | grep as-agent
+tibco    31590 20812  0 10:10 pts/0    00:00:00 /opt/tibco/as/2.1/bin/as-agent -metaspace ARP -listen tcp://195.233.197.158:60000 -discovery tcp://195.233.197.158:60000;195.233.197.158:60001;195.233.197.158:60002 -data_store /opt/tibco/vodafone/EURoaming
+
+
+
+To add snoop on the EMS
+*************************************************
+
+create user snoop "snoop user" password=snoop
+add member $admin snoop
+
+***********************************************
+For password less login from one server to another
+*********************************************************
+https://www.tecmint.com/ssh-passwordless-login-using-ssh-keygen-in-5-easy-steps/
+
+SSL enabling
+************************************
+Trace.Task.*=true
+java.property.javax.net.debug=ssl
+java.property.TIBCO_SECURITY_VENDOR=j2se
+
+
+For SMTP connection check
+*********************************************
+[tibco@TIL-BW-SIT4 AutoStart]$ cat /etc/hosts | grep mail
+195.233.114.76  maildub.dc-dublin.de
+
+to check send email log
+
+ "hello" | sendmail shraddha.khandgaure1@vodafone.com
+  which sendmail
+cd /var/log
+ less maillog
+
+Ex cmd:
+echo "body" | mailx -r "Jenkins Automation Server <jenkins@vodafone.com>" -s "Test Email" username@vodafone.com
+
+ 
+ 
+*******************************
+
+chkconfig --list | grep tibco
+man chkconfig
+ps -fu tibco
+cat /etc/inittab
+chkconfig --del tibco
+ 1046  chkconfig --list | grep tibco
+ 1047  chkconfig --add tibco
+ 1048  chkconfig --list | grep tibco
+
+************************
+IDAM/OAG decryption issue update the policy jars
+************************
+/opt/tibco/tibcojre64/1.8.0/lib/security
+
+-rw-rw-r-- 1 tibco tibco   3023 Sep  8  2016 US_export_policy.jar
+-rw-rw-r-- 1 tibco tibco   3035 Sep  8  2016 local_policy.jar
+[tibco@TIL-BW-SIT4 security]$ pwd
+
+
+
+T8/SIT4 sudo access and start up script
+*********************************
+sudo -u root -i
+crontab -l
+cat /opt/tibco/Mihir/AutoStart/startBW.sh
+cat /etc/init.d/tibco
+diff /etc/init.d/tibco /opt/tibco/Mihir/AutoStart/startBW.sh
+cat /etc/init.d/tibco
+ps -aef | grep bw
+pwd
+
+
+
+
+Coherence details for .jks
+
+********************************************************************
+~/tibcojre64/1.8.0/bin/keytool -list -v -keystore rigcacheDM.jks
+Decypted:storepass
+Encypted:c3RvcmVwYXNz
+[tibco@TIL-BW-SIT4 conf]$ ~/tibcojre64/1.8.0/bin/keytool -list -v -keystore rigcacheDM.jks
+Enter keystore password:
+
+Keystore type: JKS
+Keystore provider: SUN
+
+Your keystore contains 1 entry
+
+Alias name: rig-cache
+Creation date: Oct 1, 2013
+Entry type: trustedCertEntry
+
+Owner: CN=data-migration, OU=RigCache, O=Vodafone, C=UK
+Issuer: CN=data-migration, OU=RigCache, O=Vodafone, C=UK
+Serial number: 524ad256
+Valid from: Tue Oct 01 13:47:02 UTC 2013 until: Fri Sep 29 13:47:02 UTC 2023
+Certificate fingerprints:
+         MD5:  0E:26:04:2D:42:23:06:A6:1E:04:DA:B9:7C:08:BE:DB
+         SHA1: E1:46:25:4E:EC:C5:6B:99:64:ED:52:B1:85:CA:F6:D1:95:6C:76:6F
+         SHA256: 69:DB:4F:57:55:68:CB:24:72:5A:3E:EF:F0:0F:A3:21:D3:54:47:38:7C:9B:04:6D:8B:D1:05:55:FD:B5:F4:10
+         Signature algorithm name: SHA1withRSA
+         Version: 3
+
+
+*******************************************
+*******************************************
+
+
+replce on server
+
+sed -i 's/PERF03/SIT04/g' asg_IGW02_6443.properties
+
+*****************************************
+command for CSR Generation and Tilgw pfx--use this
+************************************************
+https://www.ssls.com/knowledgebase/how-can-i-find-the-private-key-for-my-ssl-certificate/
+
+
+
+/opt/tibco/apx/tibcojre64/1.8.0/bin/keytool -genkey -alias tilgw -keyalg RSA -keysize 2048 -keypass til123 -storepass til123 -keystore til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_keystore.jks 
+
+/opt/tibco/apx/tibcojre64/1.8.0/bin/keytool -certreq -keystore til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_keystore.jks -alias tilgw -file til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.csr 
+
+keytool -importkeystore -srckeystore keystore.jks -destkeystore keystore.p12 -deststoretype PKCS12 -srcalias <jkskeyalias> -srcstorepass <jkspassword> -srckeypass <keypassword> -deststorepass <newp12password> -destkeypass <newkeypassword>
+
+/opt/tibco/apx/tibcojre64/1.8.0/bin/keytool -importkeystore -srckeystore til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_keystore.jks -srcstorepass til123 -srckeypass til123 -srcalias tilgw -destalias tilgw -destkeystore til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.p12 -deststoretype PKCS12 -deststorepass til123 -destkeypass til123
+
+openssl pkcs12 -in til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.p12 -nodes -nocerts -out til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.key
+openssl rsa -in til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.key -out til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_RSA.key
+or
+openssl pkcs12 -in til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.p12 -nodes -nocerts -out til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_key.pem
+
+
+openssl pkcs7 -in cert_til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.p7b -inform DER -print_certs -out til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.pem
+
+cat til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_key.pem til-gateway-int-sit4.newco.test.vodafoneaws.co.uk.pem >> til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_certchain.pem 
+
+openssl pkcs12 -export -in til-gateway-int-sit4.newco.test.vodafoneaws.co.uk_certchain.pem -out IGW02.pfx
+
+Extracting The public cert from .pfx
+####################
+openssl pkcs12 -in IGW02.pfx -out IGW02.crt -clcerts -nokeys
+
+Extraction the complete cert with key from .pfx
+###############################
+openssl pkcs12 -in IGW02.pfx -out IGW02.crt -nodes
+
+
+2 nd method to generate server certificate.
+###############################################################################
+/usr/bin/openssl req -new -sha256 -newkey rsa:2048 -keyout SIT4_Gateway_With_key.pem -out SIT4__With_key_CSR.pem -subj "/CN=til-gateway-int-sit4.newco.test.vodafoneaws.co.uk/OU=Vodafone UK/O=Vodafone Group Services Limited/L=Newbury/ST=Berkshire/C=GB"
+
+openssl req -new -sha256 -newkey rsa:2048 -keyout SIT4_Gateway_Cert_key.pem -out SIT4_Cert_CSR.pem -subj "/CN=til-gateway-int-sit4.newco.test.vodafoneaws.co.uk/OU=Vodafone UK/O=Vodafone Group Services Limited/L=Newbury/ST=Berkshire/C=GB"
+
+Note: while raising TILGW server certificate passphase suppose to be removed for private key. so it recommended to generated privatekey without passphase by using -nodes command.
+
+openssl req -new -sha256 -newkey rsa:2048 -keyout SIT4_Gateway_key.pem -out SIT4_key_CSR.pem -nodes -subj "/CN=til-gateway-int-sit4.newco.test.vodafoneaws.co.uk/OU=Vodafone UK/O=Vodafone Group Services Limited/L=Newbury/ST=Berkshire/C=GB"
+
+openssl rsa -in consumerencrypted.key -out consumer.key
+
+openssl pkcs7 -in cert_til-gateway-test-auktltdr-proxy.internal.vodafone.co.uk.p7b -inform DER -print_certs -out cert.pem 
+
+#############################################################################################
+***************************************************
+openssl req -in SIT4_Cert_CSR.pem -text
+*****************************************
+https://vodafone.sharepoint.com/sites/PKI/SitePages/Private-Trust-Certificate-Request.aspx ---for Vodafone CA , all type cert
+https://enrol.pki.vodafone.com/aspx/certificate/CertificateIssuancePkcs10View.aspx---> for Vodafone CA
+
+https://www.digicert.com/secure/requests/products?guest_key=vjtxx9p1z5m9nvh0 ----> For Digi Cert
+
+openssl pkcs12 -in IGW02_new.pfx  -nokeys | openssl x509 -noout -enddate
+
+openssl pkcs12 -export -in tilgw-sit.sharednonprod.svc.vodafoneaws.co.uk_certchain.pem -out IGW02_new.pfx
+
+commnad see .pem contain
+openssl x509 -in tilgw-sit.sharednonprod.svc.vodafoneaws.co.uk_chain.pem -text
+
+commands to get puplic cert from .pfx
+*********************************************************
+openssl pkcs12 -in IGW02.pfx -out IGW02.crt -nodes
+
+to view the certificate after extarction
+************************************************
+openssl x509 -in IGW02.crt -text -noout 
+
+To Check RV is running or not amoung the machine , precheck only RV port should be same accross the machine
+********************************
+from one machine
+tibrvlisten -service 7500 -daemon tcp:7500 "shraddha.test"
+
+from another Machine
+tibrvsend -service 7500 -daemon tcp:7500 "shraddha.test" Hello
+
+
+C2 General
+From: Khandgaure, Shraddha, Vodafone Group (External) <shraddha.khandgaure1@vodafone.com> 
+Sent: Wednesday, July 8, 2020 7:54 PM
+To: Khandgaure, Shraddha, Vodafone Group (External) <shraddha.khandgaure1@vodafone.com>
+Subject: RE: commands_updated
+
+
+Heap Dump:
+
+./jmap -dump:format=b,file=/opt/SP/tibco/tools/jdk1.6.0_13/Heapdump-08July_uk2308yr_BeforeTest.bin 55092
+
+./jmap -dump:file=/opt/SP/tibco/tools/jdk1.6.0_13/Heapdump-08July_uk2309yr 53020
+./jmap -dump:file=/opt/SP/tibco/tools/jdk1.6.0_13/Heapdump-08July_uk2308yr 55092
+
+./jstack 51475 > /opt/SP/tibco/tools/jdk1.6.0_13/bin/threaddump
+/opt/SP/tibco/tools/jdk1.6.0_13/bin
+
+sar -f /var/log/sa/sa06
+
+find . -exec grep -l "COUK" {} \;
+
+
+jmap -dump:format=b,file=<file-path> <pid> 
+where
+pid: is the Java Process Id, whose heap dump should be captured
+file-path: is the file path where heap dump will be written in to.
+Example:
+    jmap -dump:format=b,file=/opt/tmp/heapdump.bin 37320
+
+Thread Dump:
+
+./jstack 51475 > /opt/SP/tibco/tools/jdk1.6.0_13/bin/threaddump
+/opt/SP/tibco/tools/jdk1.6.0_13/bin
+
+SAR output on particular date
+sar -f /var/log/sa/sa06
+
+*************************************************
+
+To enable SOAP action in TILGW 2.3 access logs
+****************************************************************
+tibco.clientVar.DefaultImplementation/Connections/HTTP/FacadeHTTPConnection/DebugPattern=%{yyyy MMM dd HH:mm:ss.SSS 'GMT'X}t [%{in_UUID}i] [%{SOAPAction}i] %A %I [%m] '%U' [%s] %bbytes %Dms
+tibco.clientVar.DefaultImplementation/Connections/HTTP/FacadeHTTPSSLConnection/DebugPattern=%{yyyy MMM dd HH:mm:ss.SSS 'GMT'X}t [%{in_UUID}i] [%{SOAPAction}i] %A %I [%m] '%U' [%s] %bbytes %Dms 
+***************************************************
+
+
+SCP
+scp [options] username1@source_host:directory1/filename1 username2@destination_host:directory2/filename
+
+***********************************************************************
+
+AUKTLTWR Apache details
+ 
+/opt/tibco/tools/apache-tomcat-5.5.33/jre1.6.0_24/bin/java -Djava.util.logging.config.file=/opt/tibco/tools/apache-tomcat-5.5.33/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djava.endorsed.dirs=/opt/tibco/tools/apache-tomcat-5.5.33/common/endorsed -classpath /opt/tibco/tools/apache-tomcat-5.5.33/bin/bootstrap.jar -Dcatalina.base=/opt/tibco/tools/apache-tomcat-5.5.33 -Dcatalina.home=/opt/tibco/tools/apache-tomcat-5.5.33 -Djava.io.tmpdir=/opt/tibco/tools/apache-tomcat-5.5.33/temp org.apache.catalina.startup.Bootstrap start
+ 
+Apache restart
+********************************************
+/opt/tibco/tools/apache-tomcat-5.5.33/bin
+ 
+./startup.sh
+ 
+
+********************************************************** 
+For folder exposure from apache
+ 
+/opt/tibco/tools/apache-tomcat-5.5.33/conf/Catalina/localhost
+/opt/tibco/tools/apache-tomcat-5.5.33/webapps/til
+
+http://auktltwr.dc-dublin.de:7780/tilEnvSupport/PATAuditSheets/NPP-Domain.html
+00 5 * * * /opt/tibco/tools/AuditSheet/Automated_EnabledOnly.sh > /opt/tibco/tools/AuditSheet/cron_out.log---uktilbhr
+ 
+
+/opt/tibco/tools/apache-tomcat-5.5.33/jre1.6.0_24/bin/java -Djava.util.logging.config.file=/opt/tibco/tools/apache-tomcat-5.5.33/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djava.endorsed.dirs=/opt/tibco/tools/apache-tomcat-5.5.33/common/endorsed -classpath /opt/tibco/tools/apache-tomcat-5.5.33/bin/bootstrap.jar -Dcatalina.base=/opt/tibco/tools/apache-tomcat-5.5.33 -Dcatalina.home=/opt/tibco/tools/apache-tomcat-5.5.33 -Djava.io.tmpdir=/opt/tibco/tools/apache-tomcat-5.5.33/temp org.apache.catalina.startup.Bootstrap start
+[tibco@auktltwr ~]$
+ 
+********************************* 
+ 
+At home path for java path
+ 
+vi ~/.bash_profile
+ 
+ 
+*********************************************
+ 
+Command for SFTP/MFT
+*******************************
+[tibco@auktltdr logs]$ sftp -oport=8022 x_auktltdr@ukftsdvr.dc-dublin.de
+Connecting to ukftsdvr.dc-dublin.de...
+sftp> ls
+ANOVO_TIL_T3                     ANOVO_TIL_T4                     CarismaTIL_T3                    CarismaTIL_T4                    FilenetDecom_Arch_T1
+FilenetDecom_T3                  TIL_TO_MFT_Test                  TIL_TO_MFT_Test_Download         UTL_TIL_T3                       UTL_TIL_T4
+xfer00002                        xfer00016                        xfer00018                        xfer00020                        xfer00036
+xfer00037                        xfer00038                        xfer00039                        xfer00601                        xfer00602
+xfer00603                        xfer00604                        xfer00605                        xfer00605_DupAlias_FA18I0000FAA  xfer00606
+xfer00609                        xfer00610                        xfer00611                        xfer00612                        xfer00613
+xfer00613_download               xfer00614                        xfer00701                        xfer0090                         xfer0091
+sftp> /xfer00038
+Invalid command.
+sftp> cd xfer00038
+sftp> ls -lrt
+sftp> pwd
+Remote working directory: /xfer00038
+sftp> ls -lrt
+sftp> put /opt/tibco/vodafone/ProcessPurchaseOrderFileANOVO/ANOVO/VF_PURCHASEORD_07022020004833_14.csv
+Uploading /opt/tibco/vodafone/ProcessPurchaseOrderFileANOVO/ANOVO/VF_PURCHASEORD_07022020004833_14.csv to /xfer00038/VF_PURCHASEORD_07022020004833_14.csv
+/opt/tibco/vodafone/ProcessPurchaseOrderFileANOVO/ANOVO/VF_PURCHASEORD_07022020004833_14.csv                                          100%  233     0.2KB/s   00:00
+ 
+ 
+*******************************************************
+ 
+sed -i '1iOperationName,CorrID,Year,Month,Date,Hour,Min,Sec,MilliSec,RequestTime,ReplyTime,ResponseTime,Success,Box' *.csv
+ 
+**********************************************************************
+ 
+curl -1 -X POST http://digitalx-sharednonprod-ec2-tlg-01.local:6283/customer/v2/marketingoffer/query --header 'SerialNmber: e6ef2dc4931f4fe4b1a8d3b30992542' --header 'CAIssuer: CN=DigiCert SHA2 Assured ID CA, OU=www.digicert.com, O=DigiCert Inc, C=US' --header 'source=DAL'  -d'{"resource":{"id":{"msisdn":"447742105564"}},"offers":{"offerType":"OFFERS"},"customerParty":{"id":"7000728578"},"specification":[{"name":"CorrelationID","value":"1107b4d1-0e2d-45b2-944d-11ff0006d877"}],"presentationFormat":{"format":"TEXT"},"noOfRecords":{"id":5}}'
+ 
+ 
+ 
+curl -v https://vf-pvt-et-pat1.icehosted.com:570/IdentityServerPortal/connect/token --capath /opt/SP/tibco/vodafone/certificates/
+ 
+**********************************************************
+ 
+Commands for Email Encryption/Decryption 
+ 
+ 
+Convert the pfx into JKS
+**********************************
+[tibco@auktltgr shraddha]$ /opt/tibco/tibcojre64/1.6.0/bin/keytool -destkeystore bw.jks -importkeystore -srckeystore bw.pfx  -srcstoretype PKCS12
+Enter destination keystore password:til12
+Re-enter new password:til123
+Enter source keystore password:til123
+ 
+ 
+then take out the public key from the keystore explorer 5.3.2 or from below command 
+ 
+/opt/tibco/tibcojre64/1.8.0/bin/keytool -keystore bw.jks -export -alias jtc -file bw1.cert
+ 
+ 
+add the file in to JKS
+***************************
+/opt/tibco/tibcojre64/1.6.0/bin/keytool -keystore /opt/tibco/tmp/shraddha/dal.jks -import -alias dal -file /opt/tibco/tmp/shraddha/bw1.cert
+Enter keystore password:dal123
+Re-enter new password:dal123
+ 
+ 
+for the Certificate 
+/opt/tibco/tibcojre64/1.8.0/bin/keytool -importcert -file IVR.cert -keystore jtc.jks -alias jtc
+ 
+/opt/tibco/tibcojre64/1.8.0/bin/keytool -destkeystore jtc-dal.jks -importkeystore -srckeystore DAL-Shraddha.pfx -srcstoretype PKCS12
+ 
+/opt/tibco/tibcojre64/1.6.0/bin/keytool -changealias -alias te-d3ed9e7f-5ea6-4742-bd52-83602ec9ff72 -destalias dal -keystore /opt/tibco/tmp/shraddha/jtc-dal.jks
+ 
+/opt/tibco/tibcojre64/1.8.0/bin/keytool -keystore jtc-dal.jks -export -alias dal -file DAL.cert
+ 
+*********************************************************************************
+ 
+Email certificate for encryption/decryption
+***************************************
+https://www.digicert.com/secure/requests/client_certificate/client_premium_data_encipherment?guest_key=9171c9cz07c2m4gh
+ 
+ 
+*************************************************************************
+ 
+ 
+[tibco@auktltdr ~]$ ps -ef | grep Multi
+tibco     4448     1  0 Nov10 ?        00:00:49 /opt/tibco/bw/5.9/bin/bwengine --pid --run --propFile /opt/tibco/tra/domain/ICCIR3Test06/application/Multiplexer/Multiplexer-Mutliplexer-1.tra --innerProcess
+tibco     4460     1  0 Nov10 ?        00:00:24 /opt/tibco/bw/5.9/bin/bwengine --pid --run --propFile /opt/tibco/tra/domain/ICCIR3Test06/application/Multiplexer/Multiplexer-Retry-1.tra --innerProcess
+tibco     4463     1  0 Nov10 ?        00:01:02 /opt/tibco/bw/5.9/bin/bwengine --pid --run --propFile /opt/tibco/tra/domain/ICCIR3Test06/application/Multiplexer/Multiplexer-Retry.tra --innerProcess
+tibco    24208     1  0 Nov10 ?        00:00:00 /opt/tibco/apx/apacheHTTP/httpd/bin/httpd -d /opt/tibco/apx/apacheHTTP/httpd/Multiplexer/8744/ -k start
+tibco    24209 24208  0 Nov10 ?        00:00:00 /usr/sbin/rotatelogs /opt/tibco/log/apacheHTTP/Multiplexer/8744/error_log.%Y.%m.%d 86400
+tibco    24210 24208  0 Nov10 ?        00:00:00 /usr/sbin/rotatelogs /opt/tibco/log/apacheHTTP/Multiplexer/8744/access_log.%Y.%m.%d 86400
+tibco    24211 24208  0 Nov10 ?        00:00:05 /opt/tibco/apx/apacheHTTP/httpd/bin/httpd -d /opt/tibco/apx/apacheHTTP/httpd/Multiplexer/8744/ -k start
+tibco    24213 24208  0 Nov10 ?        00:00:03 /opt/tibco/apx/apacheHTTP/httpd/bin/httpd -d /opt/tibco/apx/apacheHTTP/httpd/Multiplexer/8744/ -k start
+tibco    24214 24208  0 Nov10 ?        00:00:08 /opt/tibco/apx/apacheHTTP/httpd/bin/httpd -d /opt/tibco/apx/apacheHTTP/httpd/Multiplexer/8744/ -k start
+tibco    35076 33496  0 12:10 pts/5    00:00:00 grep Multi
+tibco    37604 24208  0 Nov10 ?        00:00:09 /opt/tibco/apx/apacheHTTP/httpd/bin/httpd -d /opt/tibco/apx/apacheHTTP/httpd/Multiplexer/8744/ -k start
+ 
+ 
+********************************************************************************************
+ 
+ 
+egrep 'UTC 2019|buffers/cache' Memory.txt | sed '$!N;s/\n/ /' | awk '{print $1,$2,$3,$4,$5,$6,",",$9,",",$10}' >> Memory_HF11.txt
+grep -v ^\* Process_CPU.txt >> Process_CPU_HF-11.txt
+egrep 'UTC 2019|39548 tibco' Process_CPU_HF-11.txt| sed '$!N;s/\n/ /' | awk '{print $1,$2,$3,$4,$5,$6,",",$15}' >> Final_Process_CPU.txt
+ 
+ *************************************************************************************
+ 
+Start Machine Agent
+ 
+bash-4.1$ cd /opt/tibco/AppDynamics/MachineAgent
+bash-4.1$ bin/machine-agent -d -p pidfile
+ 
+**********************************************************************************
+
+Path: /opt/tibco/tools/apache-jmeter-2.13/bin
+export PATH=/opt/tibco/install/jdk1.7.0_80/bin:$PATH;./jmeter.sh -n -t APIX_Shraddha_HF-10.jmx
+ 
+ *********************************************************************
+For Equnity
+**************************
+ 
+java.property.TIBCO_SECURITY_VENDOR=j2se
+Trace.Task.ConnectivityServices/Equiniti/Public/InvokeEquinitiApi.SendHTTPRequestToEquinitiLMS=true
+Trace.Task.ConnectivityServices/Equiniti/Private/GetEquinitiOAuthToken.process.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=tru
+ 
+******************************************************************************
+ 
+Softlink or symbolic link
+ 
+To find softlink created 
+ls -lhaF | grep ^l   # list links
+ls -lhaF | grep ^d   # list directories
+ls -lhaF | grep ^-   # list files
+ 
+ls -lhaF | grep ^l
+ 
+To find out path for soft link created file
+ 
+readlink -f ver4.5.5.24422
+ 
+uktilbhr:tibco:/opt/tibco/tools/AppDynamics/ICCIR4PERF03/AppServerAgent $ readlink -f ver4.5.5.24422
+/opt/tibco/tools/AppDynamics/ICCIR4PERF03/AppServerAgent/ver4.5.5.24422
+uktilbhr:tibco:/opt/tibco/tools/AppDynamics/ICCIR4PERF03/AppServerAgent $ ls -lhaF | grep ^l
+lrwxrwxrwx. 1 tibco tibco   14 Jan 30  2019 latest -> ver4.5.5.24422/
+ 
+ 
+For creating the link
+ln -s /root/Public/mytextfile.txt /root/Public/myothertextfile.txt
+ 
+**********************************************************************************************
+ 
+[tibco@auktltwr ~]$ ps -ef | grep apache
+tibco     6792 24116  0  2018 ?        00:01:16 /opt/tibco/apx/apacheHTTP/httpd/bin/httpd -d /opt/tibco/apx/apacheHTTP/httpd/ICCIR3Test24/8944/ -k start
+tibco    11062     1  1 Aug23 ?        1-01:52:52 /opt/tibco/tools/apache-tomcat-5.5.33/jre1.6.0_24/bin/java -Djava.util.logging.config.file=/opt/tibco/tools/apache-tomcat-5.5.33/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Djava.endorsed.dirs=/opt/tibco/tools/apache-tomcat-5.5.33/common/endorsed -classpath /opt/tibco/tools/apache-tomcat-5.5.33/bin/bootstrap.jar -Dcatalina.base=/opt/tibco/tools/apache-tomcat-5.5.33 -Dcatalina.home=/opt/tibco/tools/apache-tomcat-5.5.33 -Djava.io.tmpdir=/opt/tibco/tools/apache-tomcat-5.5.33/temp org.apache.catalina.startup.Bootstrap start
+ 
+*****************************************************************************
+java.property.TIBCO_SECURITY_VENDOR=j2se
+bw.plugin.http.server.debug=true
+java.property.javax.net.debug=ssl,plaintext,record,handshake
+Trace.Startup=true
+Trace.JC.*=true
+Trace.Engine=true
+Trace.Debug.*=true
+Trace.Task.BusinessServices/ITIntegration/ApplicationIntegration/Routing/DeviceChangeNotificationVDC/Sub/MainProcess.2.process.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=true
+ 
+ 
+****************************************************
+ 
+uktilbhr:tibco:/opt/tibco/vodafone/certificates/WCC/NPP $ ~/tibcojre64/1.8.0/bin/keytool -list -v -keystore wcc_npp.jks
+ 
+ 
+*****************************************************************
+ touch -d 'Aug  9 10:13' GetDeviceBlacklistStatusRequestTransform.xsl
+ 
+curl -1 -X POST http://auktltdr:6444/IGW --header 'SOAPAction: "GetDeviceBlacklistStatus.1"' --header 'SerialNumber: 0D55034BB2FDCDA30A190B7D9997DBF4' --header 'CAIssuer: CN=DigiCert SHA2 Assured ID CA,OU=https://clicktime.symantec.com/3W3LgD4eVPVxjGznjSoMysu7Vc?u=www.digicert.com%2CO%3DDigiCert Inc,C=US' -d'<?xml version="1.0"?>
+  253  <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Header><h:Header xmlns:h="http://xmlns.vodafone.co.uk/map/til/wsdl/Common/Header" xmlns="http://xmlns.vodafone.co.uk/map/til/wsdl/Common/Header" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><source>TIL</source><sourceTimestamp>2019-08-07T11:30:19.2291105+01:00</sourceTimestamp><transactionId>0</transactionId></h:Header></s:Header><s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><GetDeviceBlacklistStatusRequest xmlns="http://xmlns.vodafone.co.uk/map/til/ProvisioningAndFulfilment/PhysicalResourceManagement/DeviceOrderManagement/GetDeviceBlacklistStatus"><Device><ID><IMEI>357469090055431</IMEI></ID></Device></GetDeviceBlacklistStatusRequest></s:Body></s:Envelope>'
+ 
+***********************************************************
+ 
+Access log mechanism enabling in TILGW 2.3 for source IP
+ 
+Cuuerent : tibco.clientVar.DefaultImplementation/Connections/HTTP/FacadeHTTPConnection/DebugPattern=%{yyyy MMM dd HH:mm:ss.SSS 'GMT'X}t %A %I [%m] '%U' [%s] %bbytes %Dms
+ 
+New:tibco.clientVar.DefaultImplementation/Connections/HTTP/FacadeHTTPConnection/DebugPattern=%{yyyy MMM dd HH:mm:ss.SSS 'GMT'X}t %h %A %I [%m] '%U' [%s] %bbytes %Dms
+ 
+ 
+************************************************************
+ 
+./AppManage -export -out /opt/tibco/tmp/shraddha/STUBS-U-Z-V2_8_00_P134.xml -genEar -ear /opt/tibco/tmp/shraddha/STUBS-U-Z-V2_8_00_P134.ear -app SB2/STUBS-U-Z-V2 -user admin -pw iccadm1n -domain ICCIR4PERFS2
+ 
+ 
+******************************************************************
+ 
+  curl --cert TG_cert_new.pem --key TG_key.pem -X POST "https://tilgw.digitalx-sharednonprod.svc.vodafoneaws.co.uk:7343/IGW/customer/v1/resource/pac" -H "accept:application/json" -H "X-Source:COUK" -H "Date: 2019-05-23T14:32:22.714Z" -H "X-TransactionID:OODJoeeJ383JD" -H "serviceName:pac" -H "Content-Type:application/json" -d '{"portOutCluster":[{"ctn":["447741785258"]}],"customerSegment":"CONSUMER","providerName":"VODAFONE","type":"PAC","overridePAC":true}' -k -v
+ 
+ 
+openssl rsa -outform der -in private.pem -out private.key
+ 
+ 
+ 
+*********************************************************************************************
+For process Tracing:
+ 
+Trace.Task.BusinessServices/CustomerManagement/CustomerProfileManagement/CustomerPersonalInformationManagement/GetNewCoMigrationStatus/Sub/GetMigrationStatusForAccountID.process.*=true
+Trace.Task.BusinessServices/CustomerManagement/CustomerProfileManagement/CustomerPersonalInformationManagement/GetNewCoMigrationStatus/Sub/ MainProcess.process.process.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=true
+ 
+ 
+********************************************************************
+ 
+ 
+./AppManage -export -out /opt/tibco/tmp/shraddha/STUBS-F-J-V2.xml -app SB1/STUBS-F-J-V2 -Misc -user admin -pw iccadm1n -domain ICCIR4PERF03 
+ 
+./AppManage -deploy -deployConfig /opt/tibco/tmp/shraddha/STUBS-F-J-V2.xml -ear /opt/tibco/tmp/shraddha/STUBS-F-J-V2_9_00_P11.ear -app OnlinePATStub/STUBS-F-J-V2 -user admin -pw iccadm1n -domain ICCIR4PERF03 -nostart
+ 
+***************************************************************************
+ 
+Sample Curl Command for HTTP and HTTPS:
+ 
+Curl: curl -1 -X POST http://auktltvr:6183/customer/v1/resource/pac--header 'SerialNumber:44b763e27b0f24d618d21ce61978e62' --header 'CAIssuer:CN=DigiCert SHA2 Assured ID CA, OU=www.digicert.com, O=DigiCert Inc, C=US' --header 'X-Source: "COUK"' --header 'Date : "2019-05-13T09:25:44.034+05:30"' --header 'X-TransactionID: "TEST-2895144653-1576315626939"' -d'{"portOutCluster":[{"ctn":"447741877400"}],"customerSegment":"CONSUMER","providerName":"Vodafone","type":"PAC"}'
+ 
+ 
+ /opt/tibco/temp/Karthik/testing
+[tibco@auktltvr testing]$
+
+curl -X POST https://til-gateway-test-auktltvr-proxy.internal.vodafone.co.uk:6146/service/v1/taskflow/trigger -data '{"taskFlow":{"channel":[{"name": "UiPath","type": "Source"},{"name": "PegaDNA","type": "Target"}],"data":{"payload":{"name": "UK_RSA_Queue","priority": "Normal","Secure": "false","SourceSystem": "UiPath","ProcessId": "PROCESS-123","TransactionId": "16032","TransactionDateTime": "2020-09-05T04:17:34.714Z","TimeToLive": "60",   "encryptedData": "AAAAAAAAAAAAAAAAAAAAAJn4Ysxlk165mBl43g7YVgpAbRFQPo4siddSWk9W7itPabn79ton+lwwV8qPN+7w7WxWEHFgDS7WPp0+/zkHsESG5+1Snz4x2dkh8lRMJSa1+Y1GWBmoaJFsxp58Nnr4tz7fUwZjJYakTF+Zl62MCsLhtZIY3NOXEb8BBIFM4pJP3jHbg1rkN/DuUXUM3wgP30MowazvfE1/c6uJTl1r9stpgjS7ZxV/vdWxtRQGbdlbcg5olXVDF7f7DicTJXNC85j3kdKB1/Mlk0ItLJr1Rve41DVHFNElYwn/rSBfU9IiuUMM7aPNHHq72BKkOv2v2M8pNcPkuPOVwSacFMD/ta9Z0zCZsKb1Sg8CqvAuGkV/oPqdD3yRH9OOOZ62IvZLDcDezPEH92P/ZpTdgbLihZx7iYw+FG6JrnB7FzoarBfT4nOtxuR++K/iZ7kq73Uu3d8ssEtCT4LGJ+ocx1uGCqEnpDhZmxhljLMDJsJhcV1rbEKAddPc3OFQkJj/U6+esQ=="}}}}' --header "Content-type: application/json" --header 'X-Source: "UIPATH"' --header 'X-TransactionID: "TESTKARTHIK123"' -k -vvv --cert ./UiPath_public.pem --key ./uipath_private-key.pem --pass uipath@123 --cacert ./Vodafone_Root_CA.crt
+
+ 
+**************************************************************************************
+ 
+Apache restart
+********************************************
+/opt/tibco/tools/apache-tomcat-5.5.33/bin
+ 
+./startup.sh
+********************************************
+
+ 
+-bash-3.2$ wget https://wm-mediator-tst.hosts.plc.cwintra.com:26231/ws/VS_EDGEFulfilmentServices
+--2018-10-01 12:58:28--  https://wm-mediator-tst.hosts.plc.cwintra.com:26231/ws/VS_EDGEFulfilmentServices
+Resolving wm-mediator-tst.hosts.plc.cwintra.com... 10.196.142.134
+Connecting to wm-mediator-tst.hosts.plc.cwintra.com|10.196.142.134|:26231... connected.
+ERROR: certificate common name `wm-mediator-prd.hosts.plc.cwintra.com' doesn't match requested host name `wm-mediator-tst.hosts.plc.cwintra.com'.
+To connect to wm-mediator-tst.hosts.plc.cwintra.com insecurely, use `--no-check-certificate'.
+Unable to establish SSL connection.
+-bash-3.2$ wget --no-check-certificate https://wm-mediator-tst.hosts.plc.cwintra.com:26231/ws/VS_EDGEFulfilmentServices
+--2018-10-01 12:58:55--  https://wm-mediator-tst.hosts.plc.cwintra.com:26231/ws/VS_EDGEFulfilmentServices
+Resolving wm-mediator-tst.hosts.plc.cwintra.com... 10.196.142.134
+Connecting to wm-mediator-tst.hosts.plc.cwintra.com|10.196.142.134|:26231... connected.
+WARNING: certificate common name `wm-mediator-prd.hosts.plc.cwintra.com' doesn't match requested host name `wm-mediator-tst.hosts.plc.cwintra.com'.
+HTTP request sent, awaiting response... 400 The endpoint reference (EPR) for the Operation not found is /ws/VS_EDGEFulfilmentServices and the WSA Action = null. If this EPR was previously reachable, please contact the server administrator.
+2018-10-01 12:58:56 ERROR 400: The endpoint reference (EPR) for the Operation not found is /ws/VS_EDGEFulfilmentServices and the WSA Action = null. If this EPR was previously reachable, please contact the server administrator..
+ 
+******************************************************************************************
+ 
+openssl s_client -connect wcc01-newvoe4.internal.vodafone.co.uk:16201
+ 
+ 
+[tibco@auktltdr ~]$ locate lsof
+/usr/sbin/lsof
+ 
+/usr/sbin/lsof |grep -v jar | grep -v zip | grep deleted
+ 
+*****************************************************************************************
+ 
+[tibco@auktltwr Sep2018]$ ps -ef | grep  TILAuditMonitor_ICCIR3PERF03-CB01.properties
+tibco    10476  2338  0 17:08 pts/0    00:00:00 grep TILAuditMonitor_ICCIR3PERF03-CB01.properties
+tibco    14166 14160  0 16:53 pts/0    00:00:02 /opt/tibco/tibcojre64/1.6.0/bin/java -classpath /opt/tibco/ems/clients/java/jms.jar:/opt/tibco/ems/clients/java/tibjms.jar:/opt/tibco/env/EMSAudit/src/lib/EMSAudit.jar:/opt/tibco/tools/EMSAudit/lib/jms.jar:/opt/tibco/tools/EMSAudit/lib/tibjms.jar:../src/lib/EMSAudit.jar com.vf.til.audit.EMSBridgeAuditLogger -config ../config/TILAuditMonitor_ICCIR3PERF03-CB01.properties
+ 
+*************************************************************************************************
+ 
+./TIBCOUniversalInstaller-lnx-x86-64.bin -console -V skipDependencyChecks="true" disableLockChecks="true"
+ 
+./TIBCOUniversalInstaller-lnx-x86-64.bin -console -V disableLockChecks="true" -is:tempdir /opt/tibco/temp
+ 
+*********************************************************************
+ 
+ ps -ef | grep sadc | awk '{print $2}' | xargs kill -9 $1 
+killing all the running process
+based on grep
+ 
+**********************************************************************************
+ 
+lsof | grep -v jar | grep -v zip | grep deleted
+lsof | grep -v jar | grep -v zip | grep deleted
+ 
+ 
+ 
+***************************************************************************
+ 
+How to find zombie process 
+ 
+First top command to verify than
+ 
+ps -ef | grep "defunct"  
+
+******************************************************************** 
+openssl rsa -in /home/tilgw/ecare.key -out /home/tilgw/ecare1.key --->  Extracting RSA key from encrypted key
+ 
+openssl s_client -connect tilgw.digitalx-sharednonprod.svc.vodafoneaws.co.uk:7243 -cert /home/tilgw/ecare.pem -key /home/tilgw/ecare1.key -CAfile /home/tilgw/root.pem -state -debug --->SSL debug
+ 
+ 
+ 
+For T4 Environment just need to add below property in tra for the E14 instance of IDAM
+ 
+java.property.oracle.security.jps.config=/opt/tibco/Vodafone/OAM/config_T4/jps-config.xml
+tibco.env.OAM_HOME=/opt/tibco/Vodafone/OAM/11G
+ 
+ 
+-bash-3.2$ pwd
+/opt/tibco/vodafone/oam
+-bash-3.2$ ln -s /home/tiblog/vodafone/oam oam
+ 
+Creation of softlink
+ 
+
+ 
+Generation of  pfx file from key and cert
+ 
+***************************************************
+openssl pkcs12 -export -inkey tilgw.digitalx-sharednonprod.svc.vodafoneaws.co.uk.key -in tilgw.digitalx-sharednonprod.svc.vodafoneaws.co.uk.pem -out GGW01.pfx
+Enter Export Password:tilgw123
+Verifying - Enter Export Password: tilgw123
+*******************************************************
+ 
+Commands for generation of  key and cert from pfx
+*************************************************************************
+openssl pkcs12 -in /opt/tibco/temp/test/VodafoneDigitalX-Checkout.pfx -out /opt/tibco/temp/test/cert.key -nocerts -node
+openssl rsa -in /opt/tibco/temp/test/cert.key -out /opt/tibco/temp/test/client.key
+openssl pkcs12 -in /opt/tibco/temp/test/VodafoneDigitalX-Checkout.pfx -out /opt/tibco/temp/test/client.pem -clcerts -nokeys
+
+**********************************************
+IGW2 test 
+ 
+ 
+/opt/tibco/tools/Sumith/GGW
+ 
+curl -i -v -k --cert ./client.pem --key ./Client.key --cacert ./DigiCertGlobalRootCA.pem --data-binary "@xyz.xml" --header 'SOAPAction:"AuthenticateIdentity.1"' -H "Content-Type:text/xml; charset=\"utf-8\"" https://til-gateway-test-auktltvr-proxy.internal.vodafone.co.uk:6147
+
+
+/opt/tibco/Prasad/GW--auktltvr
+curl -i -v -k --cert ./VodafoneDigitalX-Checkout.pem --key ./VodafoneDigitalX-Checkout.pem --cacert ./InternalCert-Root.pem --data-binary "@xyz.xml" --header 'SOAPAction:"AuthenticateIdentity.1"' -H "Content-Type:text/xml; charset=\"utf-8\"" https://til-gateway-test-auktltvr-proxy.internal.vodafone.co.uk:6146
+
+**************************************************************************************
+curl -i -v -k --cert ./TG_cert.pem --key ./TG_key.pem --cacert ./DigiCertGlobalRootCA.pem --data-binary "@GIPL2_CURL_request_7000309589.xml" --header 'SOAPAction:"GetInstalledProductList.2"' -H "Content-Type:text/xml; charset=\"utf-8\"" https://apx-proxy-test-prodcert.vodafone.co.uk:5922/IGW
+ 
+*********************************************
+ 
+Updated the Gemini command in .txt file.
+ 
+Trace.Task.BusinessServices/CustomerManagement/CustomerProfileManagement/CustomerPersonalInformationManagement/GetBanBenForCtn/Sub/BusinessLogic.process.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=true 
+ 
+****************************************************************
+
+mounika.kalluri@vodafone.com--for vodafone certificate
+
+
+
+java.property.TIBCO_SECURITY_VENDOR=j2se
+Trace.Task.BusinessServices/Billing/PaymentMethodsManagement/PaymentMethodAuthorisation/AuthorisePayment/Sub/MainProcess.2.process.*=true
+Trace.Task.BusinessServices/Billing/PaymentMethodsManagement/PaymentMethodAuthorisation/AuthoriseAndSettlePayment/Sub/MainProcess.2.process.*=true
+Trace.Task.BusinessServices/Billing/PaymentMethodsManagement/PaymentMethodInformationManagement/SettlePayment/Sub/MainProcess.process.*=true
+Trace.Task.ConnectivityServices/Aeriandi/Public/BeginIvrAssistPayment.process.Send\ HTTP\ Request=true
+Trace.Debug.*=true
+Trace.Log=true
+bw.engine.showInput=true
+bw.engine.showOutput=true
+java.property.com.tibco.plugin.soap.trace.inbound=true
+java.property.com.tibco.plugin.soap.trace.outbound=true
+java.property.com.tibco.plugin.soap.trace.filename=/opt/tibco/SoapTraceLogs/T4/PaymentMethodsManagement-Misc.log
+java.property.com.tibco.plugin.soap.trace.pretty=true
+java.property.com.tibco.plugin.soap.trace.stdout=true
+
+
+SSL enabling without J2se
+*************************
+bw.plugin.http.server.debug=true
+java.property.javax.net.debug=ss
+Trace.Task.*=true
+
+
+TSTIL application command
+***************************************
+ps | grep -v grep | grep netstat
+/usr/ucb/ps -auxww | grep HLRAdapter-HLRAdapter
+
+Curl via proxy
+*********************************************
+curl -i -v --proxy 10.145.16.50:80 apx-proxy-test-prodcert.vodafone.co.uk:4443
+
+
+********************************************************************
+java.property.TIBCO_SECURITY_VENDOR=j2se
+bw.plugin.tcp.server.acceptCount=100
+TCPRead.ThreadCount=100
+java.property.com.sun.net.ssl.enableECC=false
+java.property.com.sun.net.ssl.enableECC=false - new added for the OAM (EventHandling-Misc) where its supress the ciper suite
+
+
+
+to find list of backend in datafiles
+**************************************************************
+grep -r /ws/VS_VfEdgeAddressManagementServices_V100 *
+
+
+TIBCO product installed 
+
+TIBCOUniversalInstaller-lnx-x86-64.bin -console (opt/tibco/install)
+
+****************************************
+
+
+   1. [ ] TIBCO ActiveMatrix BusinessWorks 5.13.0
+   2. [ ] TIBCO ActiveMatrix BusinessWorks 5.13.0 Hotfix 9
+   3. [ ] TIBCO Designer 5.10.0
+   4. [ ] TIBCO Administrator 5.10.0
+   5. [ ] TIBCO Administrator 5.10.0 Hotfix 1
+   6. [ ] TIBCO Runtime Agent 5.10.0
+   7. [ ] TIBCO Runtime Agent 5.10.0 Hotfix 2
+   8. [ ] TIBCO BusinessEvents 5.1.0
+   9. [ ] TIBCO BusinessEvents 5.1.1
+   10. [ ] TIBCO ActiveMatrix BusinessWorks Plug-in for EJB 5.4.0
+   11. [ ] TIBCO ActiveMatrix BusinessWorks Plug-in for REST and JSON 2.1.0
+   12. [ ] TIBCO ActiveMatrix BusinessWorks Plug-in for sFTP 1.1.0
+   13. [ ] TIBCO ActiveMatrix BusinessWorks Plug-in for sFTP 1.1.0 Hotfix 2
+   14. [ ] TIBCO Database Drivers 2.0.1
+   15. [ ] TIBCO Database Drivers 2.0.1 Hotfix 1
+   16. [ ] TIBCO EMS 8.3.0
+   17. [ ] TIBCO Hawk 5.2.0
+   18. [ ] TIBCO Hawk 5.2.0 Hotfix 3
+   19. [ ] TIBCO Rendezvous 8.4.4
+   20. [ ] Third Party Core Libraries 5.10.0
+   
+   
+   ***************************************************
+   
+   TIBCO document for installation
+   ********************************************
+   https://docs.tibco.com/pub/activematrix_businessworks/5.14.0/doc/pdf/TIB_BW_5.14_installation.pdf?id=1
+   
+   
+   *******************************
+
+
+Engine : TMF637_ProductInventoryManagement
+*********************************************************
+bw.engine.showInput=true
+bw.engine.showOutput=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Interface/JSON/JMSServiceRequestReply.4.process.*=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Interface/JSON/ParseRequest.4.process.*=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Interface/JSON/RenderErrorReply.4.process.*=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Interface/JSON/RenderReply.4.process.*=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Sub/CallProcedure.process.*=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Sub/InstallBase.process.*=true
+Trace.Task.BusinessServices/ProductInventoryManagement/V4/Product/GETProductInventoryManagement/Sub/MainProcess.4.process.*=true
+
+********************************************************
+
+Engine : CustomerProfileManagement-Fusion-Siebel
+bw.engine.showInput=true
+bw.engine.showOutput=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Interface/JSON/JMSServiceRequestReply.2.process.*=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Sub/MainProcess.2.process.*=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Sub/CreateSalesOrderFusionRequest.process.*=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Sub/AuthenticateCheck.process.*=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Sub/CreatePremises.2.process.*=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Sub/CreateServicePoint.2.process.*=true
+Trace.Task.BusinessServices/ProvisioningAndFulfilment/OrderFulfilmentCoordination/CommercialOrderExecutionManagement/CreateSalesOrder/Sub/ValidateStoreID.2.process.*=true
+
+
+
+cd /opt/tibco/tools/AppDynamics/TILCPP02/MachineAgent-new/bin/
+./machine-agent -d -p bwserver-01.pid
+
+
+
+
+**********************************
+Trace.Engine=true
+Trace.Task.*=true
+Trace.Info.*=true
+Trace.Error.*=true
+Trace.Debug.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=true
+
+***********************************
+[2:19 PM] Koranglekar, Tanvi, Vodafone
+Trace.Engine=true
+Trace.Task.*=true
+Trace.Info.*=true
+Trace.Warn.*=true
+Trace.Error.*=true
+Trace.Debug.*=true
+bw.engine.showInput=true
+bw.engine.showOutput=true
+ heart 1
+
+
+IDAM enabling property
+***********************************************************
+java.property.java.security.debug=jpspolicy
+java.property.java.util.logging.config.file=/opt/tibco/tra/domain/ICCIR4Test06/application/CustomerIdentityManagement-IDAM/logging.properties
+
+
+
+keytool -v -list -keystore TILGW-AllPartners.jks
+
